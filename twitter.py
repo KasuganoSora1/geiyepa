@@ -53,7 +53,7 @@ def syn_start():
             #发生错误 再次打开该页面
             print("回滚至上一页")
             #p_str = get_next(base_url+"&cursor="+n_str)
-            #para_w["cursor"]=n_str
+            para_w["cursor"]=n_str
             p_str = get_next(base_url+"?"+urlencode(para_w))
             if(p_str!=".........."):
                 n_str=p_str
