@@ -1,0 +1,14 @@
+{
+		"configurations": {
+				"run": {
+						"adapter": "debugpy" /* coment goes here too */,
+						"configuration": {
+								"name":"python-test",
+								"type": "python",
+								"request": "launch",
+								"program": "./_init_.py"
+						}
+				}
+		}
+}
+

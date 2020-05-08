@@ -1,101 +1,121 @@
 import requests
+import debug
 import connect
+import tool
 import configparser
+from urllib.parse import urlencode
 import json
+import time
+import math
+import re
+import os
+import zipfile
+#https://www.pixiv.net/users/8790637/bookmarks/artworks
+#https://www.pixiv.net/users/8790637/bookmarks/artworks?rest=hide
+
+url="https://www.pixiv.net/ajax/user/8790637/illusts/bookmarks"
 config=configparser.ConfigParser()
-
 config.read("./app.conf")
-mode="first"
+mode=config.get("mode","type")
 user=config.get("sys","username")
-
-address=config.get("mysql","address")
-user_name=config.get("mysql","username")
-password=config.get("mysql","password")
-
 proxy={
-    "http":config.get("proxy","http"),
-    "https":config.get("proxy","https")
+        "http":config.get("proxy","http"),
+        "https":config.get("proxy","https")
 }
+header=tool.make_header("pixiv",user)
+cookie=tool.make_cookie("pixiv",user)
+
 
 def syn_start():
-   p_str = "++++++++++"
-    n_str=""
-    #para without cursor
     while True:
-        para_w = {
-            "include_profile_interstitial_type": 1,
-            "include_blocking": 1,
-            "include_blocked_by": 1,
-            "include_followed_by": 1,
-            "include_want_retweets": 1,
-            "include_mute_edge": 1,
-            "include_can_dm": 1,
-            "include_can_media_tag": 1,
-            "skip_status": 1,
-            "cards_platform": "Web-12",
-            "include_cards": 1,
-            "include_composer_source": "true",
-            "include_ext_alt_text": "true",
-            "include_reply_count": 1,
-            "tweet_mode": "extended",
-            "include_entities": "true",
-            "include_user_entities": "true",
-            "include_ext_media_color": "true",
-            "include_ext_media_availability": "true",
-            "send_error_codes": "true",
-            "simple_quoted_tweets": "true",
-            "sorted_by_time": "true",
-            "count":20,
-            "ext": "mediaStats,highlightedLabel,cameraMoment"
-        }
-        if p_str == "..........":
-            #发生错误 再次打开该页面
-            print("回滚至上一页")
-            #p_str = get_next(base_url+"&cursor="+n_str)
-            para_w["cursor"]=n_str
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-            time.sleep(5)
-        elif p_str=="++++++++++":
-            #第一次打开 打开base_url
-            print("第一次打开")
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-        elif p_str=="**********":
-            print("回滚至第一页")
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-            time.sleep(60*10)
-        else:
-            #正常进入下一页
-            print("下一页")
-            para_w["cursor"]=n_str
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-            time.sleep(5)
+        try:
+            start("show")
+            start("hide")
+            time.sleep(60*60)
+        except Exception as e:
+            tool.t_print("pixiv 错误%s"%e)
 
 
-def make_cookie():
-    c_list = connect.read("select * from cookie where web='pixiv' and user='"+user+"'")
-    cookies = {
-    }
-    cookie_txt = c_list[0]["cookie"]
-    for cookie_item in cookie_txt.split(";"):
-        cookies[cookie_item.split("=")[0].strip(
-            " ")] = cookie_item.split("=")[1].strip(" ")
-    return cookies
 
 
-def make_header():
-    h_list = connect.read("select * from header where web='pixiv' and user='"+user+"'")
-    headers = {
+def start(type):#type hide or show
+    para={
+            "tag":"",
+            "offset":0,
+            "limit":48,
+            "rest":type,
+            "lang":"zh"
+            }
+    response=requests.get(url+"?"+urlencode(para),cookies=cookie,headers=header,proxies=proxy)
+    jo=json.loads(response.text)
+    response.close()
 
-    }
-    for item in h_list:
-        headers[item["head"]] = item["value"]
-    return headers
+
+    total_num=int(jo["body"]["total"])
+    page_num=math.ceil(total_num/48)
+    for page in range(0,page_num):
+        #循环获取所有
+        para["offset"]=page*48
+        response=requests.get(url+"?"+urlencode(para),cookies=cookie,headers=header,proxies=proxy)
+        tool.t_print("pixiv open page "+str(page))
+        jo=json.loads(response.text)
+        response.close()
+        for item in jo["body"]["works"]:
+            #this get description
+            #why add it because shuang
+            #if work not exist insert it
+            #only when file is exist, get description
+            if not connect.isexist("select * from pixiv_fav where id='"+item["illustId"]+"'"):
+                response=requests.get("https://www.pixiv.net/artworks/"+item["illustId"],cookies=cookie,headers=header,proxies=proxy)
+                pat_des=re.compile(r"\"description\":\"[\s\S]*?\"")
+                result_des=pat_des.findall(response.text)
+                result_desstr=result_des[0][15:len(result_des[0])-1]
+
+                tool.t_print("insert pixiv id "+item["illustId"]+" Title "+item["illustTitle"]+"")
+                connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item["illustId"]+"','"+user+"','"+item["illustTitle"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
+                #gif?
+                if item["illustType"]==2:
+                    response.close()
+                    #https://www.pixiv.net/ajax/illust/81072672/ugoira_meta
+                    response=requests.get("https://www.pixiv.net/ajax/illust/"+item["illustId"]+"/ugoira_meta",headers=header,cookies=cookie,proxies=proxy)
+                    jo=json.loads(response.text)
+                    response.close()
+                    frame=json.dumps(jo["body"]["frames"])
+                    connect.execute("insert into pixiv_gif(pixiv_id,url,delay) values('"+item["illustId"]+"','"+jo["body"]["originalSrc"]+"','"+frame+"')")
+                    #GIF
+                else:
+                    #not GIF
+                    #https://i.pximg.net/img-original/img/2017/01/22/21/15/53/61062485_p0.png
+                    #this response is page of works ,on the top we get des from it
+                    pat_ori=re.compile(r"https://i\.pximg\.net/img-original/img/[/\d]+_p\d+\.[pngjp]+")
+                    result=pat_ori.findall(response.text)
+                    response.close()
+                    pic_count=item["pageCount"]
+                    #insert pic in sql
+                    for i in range(pic_count):
+                        #https://i.pximg.net/img-original/img/2020/03/20/01/50/36/80230872_p0.jpg
+                        connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item["illustId"]+"','"+result[0].replace("p0","p"+str(i))+"')")
+            else:
+                #response.close()
+                tool.t_print(item["illustId"]+"has exist ")
+
+
+def down_start():
+    pic_list=connect.read("select * from pixiv_media")
+    gif_list=connect.read("select * from pixiv_gif")
+    for pic in pic_list:
+        pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
+        if(os.access("d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
+            continue
+        response=requests.get(pic["url"],proxies=proxy,headers=header)
+        bf=response.content
+        with open("./d_file_pixiv/"+pic_name,"wb") as f:
+            f.write(bf)
+            f.close()
+        response.close()
+    for gif in gif_list:
+        response=requests.get(gif["url"],proxies=proxy,headers=header)
+        bf=response.content
+        zip_file=zipfile.ZipFile(bf)
+    time.sleep(100)
 
