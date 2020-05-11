@@ -10,6 +10,8 @@ import math
 import re
 import os
 import zipfile
+import io
+import imageio
 #https://www.pixiv.net/users/8790637/bookmarks/artworks
 #https://www.pixiv.net/users/8790637/bookmarks/artworks?rest=hide
 
@@ -105,17 +107,31 @@ def down_start():
     gif_list=connect.read("select * from pixiv_gif")
     for pic in pic_list:
         pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
-        if(os.access("d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
+        if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
             continue
         response=requests.get(pic["url"],proxies=proxy,headers=header)
         bf=response.content
-        with open("./d_file_pixiv/"+pic_name,"wb") as f:
+        with open("./d_file/d_file_pixiv/"+pic_name,"wb") as f:
             f.write(bf)
             f.close()
         response.close()
     for gif in gif_list:
-        response=requests.get(gif["url"],proxies=proxy,headers=header)
-        bf=response.content
-        zip_file=zipfile.ZipFile(bf)
-    time.sleep(100)
+        if(os.access("./d_file/d_file_pixiv/"+pic_name,os.F_OK)):
+            continue
+        gif_down(gif)
 
+def gif_down(gif):
+    response=requests.get(gif["url"],proxies=proxy,headers=header)
+    bf=response.content
+    by=io.BytesIO(bf)
+    zip_file=zipfile.ZipFile(by,"r")
+    response.close()
+    image_pic=[]
+    image_delay=[]
+    for name in zip_file.namelist():
+        pic=zip_file.read(name)
+        image_pic.append(imageio.imread(pic))
+    delays=json.loads(gif["delay"])
+    for delay in delays:
+        image_delay.append(delay["delay"]/1000)
+    imageio.mimsave("./pic_file_pixiv/"+gif["pixiv_id"]+".gif",image_pic,"GIF",duration=image_delay)
