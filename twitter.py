@@ -24,77 +24,84 @@ def syn_start():
     n_str=""
     #para without cursor
     while True:
-        para_w = {
-            "include_profile_interstitial_type": 1,
-            "include_blocking": 1,
-            "include_blocked_by": 1,
-            "include_followed_by": 1,
-            "include_want_retweets": 1,
-            "include_mute_edge": 1,
-            "include_can_dm": 1,
-            "include_can_media_tag": 1,
-            "skip_status": 1,
-            "cards_platform": "Web-12",
-            "include_cards": 1,
-            "include_composer_source": "true",
-            "include_ext_alt_text": "true",
-            "include_reply_count": 1,
-            "tweet_mode": "extended",
-            "include_entities": "true",
-            "include_user_entities": "true",
-            "include_ext_media_color": "true",
-            "include_ext_media_availability": "true",
-            "send_error_codes": "true",
-            "simple_quoted_tweets": "true",
-            "sorted_by_time": "true",
-            "count":20,
-            "ext": "mediaStats,highlightedLabel,cameraMoment"
-        }
-        if p_str == "..........":
-            #发生错误 再次打开该页面
-            tool.t_print("twitter 回滚至上一页")
-            #p_str = get_next(base_url+"&cursor="+n_str)
-            para_w["cursor"]=n_str
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-            time.sleep(5)
-        elif p_str=="++++++++++":
-            #第一次打开 打开base_url
-            tool.t_print("twitter 第一次打开")
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-        elif p_str=="**********":
-            tool.t_print("twitter 回滚至第一页")
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-            time.sleep(60*60)
-        else:
-            #正常进入下一页
-            tool.t_print("twitter 下一页")
-            para_w["cursor"]=n_str
-            p_str = get_next(base_url+"?"+urlencode(para_w))
-            if(p_str!=".........."):
-                n_str=p_str
-            time.sleep(5)
+        try:
+            para_w = {
+                "include_profile_interstitial_type": 1,
+                "include_blocking": 1,
+                "include_blocked_by": 1,
+                "include_followed_by": 1,
+                "include_want_retweets": 1,
+                "include_mute_edge": 1,
+                "include_can_dm": 1,
+                "include_can_media_tag": 1,
+                "skip_status": 1,
+                "cards_platform": "Web-12",
+                "include_cards": 1,
+                "include_composer_source": "true",
+                "include_ext_alt_text": "true",
+                "include_reply_count": 1,
+                "tweet_mode": "extended",
+                "include_entities": "true",
+                "include_user_entities": "true",
+                "include_ext_media_color": "true",
+                "include_ext_media_availability": "true",
+                "send_error_codes": "true",
+                "simple_quoted_tweets": "true",
+                "sorted_by_time": "true",
+                "count":20,
+                "ext": "mediaStats,highlightedLabel,cameraMoment"
+            }
+            if p_str == "..........":
+                #发生错误 再次打开该页面
+                tool.t_print("twitter 回滚至上一页")
+                #p_str = get_next(base_url+"&cursor="+n_str)
+                para_w["cursor"]=n_str
+                p_str = get_next(base_url+"?"+urlencode(para_w))
+                if(p_str!=".........."):
+                    n_str=p_str
+                time.sleep(60*10)
+            elif p_str=="++++++++++":
+                #第一次打开 打开base_url
+                tool.t_print("twitter 第一次打开")
+                p_str = get_next(base_url+"?"+urlencode(para_w))
+                if(p_str!=".........."):
+                    n_str=p_str
+            elif p_str=="**********":
+                tool.t_print("twitter 回滚至第一页")
+                p_str = get_next(base_url+"?"+urlencode(para_w))
+                if(p_str!=".........."):
+                    n_str=p_str
+                time.sleep(60*60)
+            else:
+                #正常进入下一页
+                tool.t_print("twitter 下一页")
+                para_w["cursor"]=n_str
+                p_str = get_next(base_url+"?"+urlencode(para_w))
+                if(p_str!=".........."):
+                    n_str=p_str
+                time.sleep(5)
+        except Exception as e:
+            tool.t_print("twitter 错误%s"%e)
 
 
 def down_start():
-    while True:
-        c_list = connect.read("select * from twitter_media")
-        for i in c_list:
-            pic_name=i["url"].split('/')[len(i["url"].split('/'))-1]
-            if(os.access("d_file/pic_file/"+pic_name,os.F_OK)):
-                continue
-            response = requests.get(i["url"],proxies=proxy)
-            bf=response.content
-            with open("./d_file/pic_file/"+pic_name,"wb") as f:
-                f.write(bf)
-                f.close()
-            response.close()
-        time.sleep(100)
+    try:
+        while True:
+            c_list = connect.read("select * from twitter_media")
+            for i in c_list:
+                pic_name=i["url"].split('/')[len(i["url"].split('/'))-1]
+                if(os.access("./d_file/pic_file/"+pic_name,os.F_OK)):
+                    tool.t_print("twitter file "+pic_name+" has exists")
+                    continue
+                response = requests.get(i["url"],proxies=proxy)
+                bf=response.content
+                with open("./d_file/pic_file/"+pic_name,"wb") as f:
+                    f.write(bf)
+                    f.close()
+                response.close()
+            time.sleep(100)
+    except Exception as e:
+        tool.t_print("twitter错误%s"%e)
 
 
 """
@@ -141,6 +148,7 @@ def get_next(url):
             #第一种为数据录入 第二种为运行后保持数据库更新
             #注意 没有按照收藏时间排序
             if connect.isexist("select * from twitter_fav where id='"+key+"' and user='"+user+"'"):
+                tool.t_print("twitter sql"+key+" has exists")
                 #print(key+" 已存在 跳过")
                 #获取该列有多少为已存在
                 continue
@@ -149,7 +157,7 @@ def get_next(url):
             
             text = twi[key]["full_text"]
             text = text.replace("'", "")
-            print("twitter insert twitter"+key)
+            tool.t_print("twitter insert twitter"+key)
             connect.execute(
                 "insert into twitter_fav(id,user,txt,time) values('"+key+"','"+user+"','"+text+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"')")
             #time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
@@ -174,5 +182,5 @@ def get_next(url):
             return item["content"]["operation"]["cursor"]["value"]
         #return item["content"]["operation"]["cursor"]["value"]
     except Exception as e:
-        print("twitter 错误%s"%e)
+        tool.t_print("twitter 错误%s"%e)
         return ".........."

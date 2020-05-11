@@ -1,3 +1,4 @@
+
 import requests
 import debug
 import connect
@@ -12,6 +13,7 @@ import os
 import zipfile
 import io
 import imageio
+
 #https://www.pixiv.net/users/8790637/bookmarks/artworks
 #https://www.pixiv.net/users/8790637/bookmarks/artworks?rest=hide
 
@@ -34,6 +36,13 @@ def syn_start():
             start("show")
             start("hide")
             time.sleep(60*60)
+        except Exception as e:
+            tool.t_print("pixiv 错误%s"%e)
+def down_start():
+    while True:
+        try:
+            down()
+            time.sleep(100)
         except Exception as e:
             tool.t_print("pixiv 错误%s"%e)
 
@@ -73,7 +82,7 @@ def start(type):#type hide or show
                 result_des=pat_des.findall(response.text)
                 result_desstr=result_des[0][15:len(result_des[0])-1]
 
-                tool.t_print("insert pixiv id "+item["illustId"]+" Title "+item["illustTitle"]+"")
+                tool.t_print("insert sql, pixiv id "+item["illustId"])
                 connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item["illustId"]+"','"+user+"','"+item["illustTitle"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
                 #gif?
                 if item["illustType"]==2:
@@ -99,27 +108,31 @@ def start(type):#type hide or show
                         connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item["illustId"]+"','"+result[0].replace("p0","p"+str(i))+"')")
             else:
                 #response.close()
-                tool.t_print(item["illustId"]+"has exist ")
+                tool.t_print("pixiv sql,"+item["illustId"]+" has exist ")
 
 
-def down_start():
-    pic_list=connect.read("select * from pixiv_media")
-    gif_list=connect.read("select * from pixiv_gif")
-    for pic in pic_list:
-        pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
-        if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
-            continue
-        response=requests.get(pic["url"],proxies=proxy,headers=header)
-        bf=response.content
-        with open("./d_file/d_file_pixiv/"+pic_name,"wb") as f:
-            f.write(bf)
-            f.close()
-        response.close()
-    for gif in gif_list:
-        if(os.access("./d_file/d_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK))
-            continue
-        gif_down(gif)
+def down():
+    while True:
+        pic_list=connect.read("select * from pixiv_media")
+        gif_list=connect.read("select * from pixiv_gif")
+        for pic in pic_list:
+            pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
+            if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
+                tool.t_print("pixiv file,"+pic_name+" has exist")
+                continue
+            response=requests.get(pic["url"],proxies=proxy,headers=header)
+            bf=response.content
+            with open("./d_file/pic_file_pixiv/"+pic_name,'wb') as fi:
+                fi.write(bf)
+                fi.close()
+            response.close()
+        for gif in gif_list:
+            if(os.access("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK)):
+                tool.t_print("pixiv file,"+pic_name+" has exist")
+                continue
+            gif_down(gif)
 
+    
 def gif_down(gif):
     response=requests.get(gif["url"],proxies=proxy,headers=header)
     bf=response.content
