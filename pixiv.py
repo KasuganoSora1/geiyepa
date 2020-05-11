@@ -116,7 +116,7 @@ def down_start():
             f.close()
         response.close()
     for gif in gif_list:
-        if(os.access("./d_file/d_file_pixiv/"+pic_name,os.F_OK)):
+        if(os.access("./d_file/d_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK))
             continue
         gif_down(gif)
 
