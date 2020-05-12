@@ -123,14 +123,16 @@ def down():
             response=requests.get(pic["url"],proxies=proxy,headers=header)
             bf=response.content
             with open("./d_file/pic_file_pixiv/"+pic_name,'wb') as fi:
-                fi.write(bf)
+                fi.write(bf) 
                 fi.close()
+                tool.t_print("pixiv file"+pic_name+" has download")
             response.close()
         for gif in gif_list:
             if(os.access("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK)):
-                tool.t_print("pixiv file,"+pic_name+" has exist")
+                tool.t_print("pixiv file,"+gif["pixiv_id"]+" has exist")
                 continue
             gif_down(gif)
+            tool.t_print("pixiv gif "+gif["pixiv_id"]+".gif"+" has download")
 
     
 def gif_down(gif):
@@ -147,4 +149,5 @@ def gif_down(gif):
     delays=json.loads(gif["delay"])
     for delay in delays:
         image_delay.append(delay["delay"]/1000)
-    imageio.mimsave("./pic_file_pixiv/"+gif["pixiv_id"]+".gif",image_pic,"GIF",duration=image_delay)
+    imageio.mimsave("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",image_pic,"GIF",duration=image_delay)
+    tool.t_print("pixiv file"+gif["pixiv_id"]+" has download")

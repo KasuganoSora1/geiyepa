@@ -99,6 +99,7 @@ def down_start():
                     f.write(bf)
                     f.close()
                 response.close()
+                tool.t_print("twitter file"+pic_name+" has download")
             time.sleep(100)
     except Exception as e:
         tool.t_print("twitter错误%s"%e)
