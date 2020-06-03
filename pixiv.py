@@ -107,8 +107,8 @@ def start(type):#type hide or show
                         #https://i.pximg.net/img-original/img/2020/03/20/01/50/36/80230872_p0.jpg
                         connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item["illustId"]+"','"+result[0].replace("p0","p"+str(i))+"')")
             else:
-                #response.close()
-                tool.t_print("pixiv sql,"+item["illustId"]+" has exist ")
+                response.close()
+                #tool.t_print("pixiv sql,"+item["illustId"]+" has exist ")
 
 
 def down():
@@ -118,7 +118,7 @@ def down():
         for pic in pic_list:
             pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
             if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
-                tool.t_print("pixiv file,"+pic_name+" has exist")
+                #tool.t_print("pixiv file,"+pic_name+" has exist")
                 continue
             response=requests.get(pic["url"],proxies=proxy,headers=header)
             bf=response.content
@@ -129,7 +129,7 @@ def down():
             response.close()
         for gif in gif_list:
             if(os.access("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK)):
-                tool.t_print("pixiv file,"+gif["pixiv_id"]+" has exist")
+                #tool.t_print("pixiv file,"+gif["pixiv_id"]+" has exist")
                 continue
             gif_down(gif)
             tool.t_print("pixiv gif "+gif["pixiv_id"]+".gif"+" has download")

@@ -59,7 +59,7 @@ def syn_start():
                 p_str = get_next(base_url+"?"+urlencode(para_w))
                 if(p_str!=".........."):
                     n_str=p_str
-                time.sleep(60*10)
+                time.sleep(60*60)
             elif p_str=="++++++++++":
                 #第一次打开 打开base_url
                 tool.t_print("twitter 第一次打开")
@@ -91,7 +91,7 @@ def down_start():
             for i in c_list:
                 pic_name=i["url"].split('/')[len(i["url"].split('/'))-1]
                 if(os.access("./d_file/pic_file/"+pic_name,os.F_OK)):
-                    tool.t_print("twitter file "+pic_name+" has exists")
+                    #tool.t_print("twitter file "+pic_name+" has exists")
                     continue
                 response = requests.get(i["url"],proxies=proxy)
                 bf=response.content
@@ -105,27 +105,7 @@ def down_start():
         tool.t_print("twitter错误%s"%e)
 
 
-"""
-def make_cookie():
-    c_list = connect.read("select * from cookie where web='twitter' and user='"+user+"'")
-    cookies = {
-    }
-    cookie_txt = c_list[0]["cookie"]
-    for cookie_item in cookie_txt.split(";"):
-        cookies[cookie_item.split("=")[0].strip(
-            " ")] = cookie_item.split("=")[1].strip(" ")
-    return cookies
 
-
-def make_header():
-    h_list = connect.read("select * from header where web='twitter' and user='"+user+"'")
-    headers = {
-
-    }
-    for item in h_list:
-        headers[item["head"]] = item["value"]
-    return headers
-"""
 
 def get_next(url):
     try:
@@ -149,7 +129,7 @@ def get_next(url):
             #第一种为数据录入 第二种为运行后保持数据库更新
             #注意 没有按照收藏时间排序
             if connect.isexist("select * from twitter_fav where id='"+key+"' and user='"+user+"'"):
-                tool.t_print("twitter sql"+key+" has exists")
+                #tool.t_print("twitter sql"+key+" has exists")
                 #print(key+" 已存在 跳过")
                 #获取该列有多少为已存在
                 continue

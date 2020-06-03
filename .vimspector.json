@@ -1,7 +1,7 @@
 {
 		"configurations": {
 				"run": {
-						"adapter": "debugpy" /* coment goes here too */,
+						"adapter": "debugpy",
 						"configuration": {
 								"name":"python-test",
 								"type": "python",
