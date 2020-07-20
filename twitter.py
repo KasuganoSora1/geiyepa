@@ -82,6 +82,7 @@ def syn_start():
                 time.sleep(5)
         except Exception as e:
             tool.t_print("twitter 错误%s"%e)
+            p_str=".........."
 
 
 def down_start():
