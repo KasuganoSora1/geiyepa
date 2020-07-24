@@ -8,7 +8,7 @@
             "name": "Python: debug",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "_init_.py",
             "console": "integratedTerminal"
         }
     ]

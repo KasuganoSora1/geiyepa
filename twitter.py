@@ -91,16 +91,39 @@ def down_start():
             c_list = connect.read("select * from twitter_media")
             for i in c_list:
                 pic_name=i["url"].split('/')[len(i["url"].split('/'))-1]
+
                 if(os.access("./d_file/pic_file/"+pic_name,os.F_OK)):
                     #tool.t_print("twitter file "+pic_name+" has exists")
                     continue
+
                 response = requests.get(i["url"],proxies=proxy)
                 bf=response.content
                 with open("./d_file/pic_file/"+pic_name,"wb") as f:
                     f.write(bf)
                     f.close()
                 response.close()
+
                 tool.t_print("twitter file"+pic_name+" has download")
+                
+            v_list=connect.read("select * from twitter_video")
+            for i in v_list:
+                v_name=i["url"].split('/')[len(i["url"].split('/'))-1]
+                if(v_name.find("?")!=-1):
+                    v_name=v_name[0:v_name.find("?")]
+                if(v_name.find(".m3u8")!=-1):
+                    continue
+                if(os.access("./d_file/twitter_video/"+v_name,os.F_OK)):
+                    continue
+
+                response = requests.get(i["url"],proxies=proxy)
+                bf=response.content
+                with open("./d_file/twitter_video/"+v_name,"wb") as f:
+                    f.write(bf)
+                    f.close()
+                response.close()
+
+                tool.t_print("twitter file"+v_name+" has download")
+
             time.sleep(100)
     except Exception as e:
         tool.t_print("twitter错误%s"%e)
@@ -147,12 +170,20 @@ def get_next(url):
             #不存在media 跳过这条twitter
             if(not ("media" in twi[key]["entities"])):
                 continue
-            #存在media 写入twitter_media
+            #存在media 写入twitter_media 
+            
             for pic in twi[key]["entities"]["media"]:
                 pic_url = pic["media_url"].replace("\\", "")
                 #print("insert media "+pic_url)
                 connect.execute(
                     "insert into twitter_media(twitter_id,url) values('"+key+"','"+pic_url+"')")
+
+            # 判断是否为video类型
+            if(len(twi[key]["entities"]["media"])!=0):
+                if(twi[key]["entities"]["media"][0]["media_url"].find("video")!=-1):
+                    for pic in twi[key]["extended_entities"]["media"]:
+                        for video in pic["video_info"]["variants"]:
+                            connect.execute("insert into twitter_video(twitter_id,url) values('"+key+"','"+video["url"].replace("\\","")+"')")
         #该url不存在新的收藏
         if(add_count==0):
             if(mode=="first"):
