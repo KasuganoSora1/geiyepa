@@ -85,7 +85,6 @@ def start(type):#type hide or show
                 #gif?
                 if item["illustType"]==2:
                     response.close()
-                    #https://www.pixiv.net/ajax/illust/81072672/ugoira_meta
                     response=requests.get("https://www.pixiv.net/ajax/illust/"+item["illustId"]+"/ugoira_meta",headers=header,cookies=cookie,proxies=proxy)
                     jo=json.loads(response.text)
                     response.close()
@@ -94,7 +93,6 @@ def start(type):#type hide or show
                     #GIF
                 else:
                     #not GIF
-                    #https://i.pximg.net/img-original/img/2017/01/22/21/15/53/61062485_p0.png
                     #this response is page of works ,on the top we get des from it
                     pat_ori=re.compile(r"https://i\.pximg\.net/img-original/img/[/\d]+_p\d+\.[pngjp]+")
                     result=pat_ori.findall(response.text)
@@ -102,7 +100,6 @@ def start(type):#type hide or show
                     pic_count=item["pageCount"]
                     #insert pic in sql
                     for i in range(pic_count):
-                        #https://i.pximg.net/img-original/img/2020/03/20/01/50/36/80230872_p0.jpg
                         connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item["illustId"]+"','"+result[0].replace("p0","p"+str(i))+"')")
             else:
                 response.close()
