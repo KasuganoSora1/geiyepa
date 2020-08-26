@@ -14,10 +14,6 @@ import zipfile
 import io
 import imageio
 
-#https://www.pixiv.net/users/8790637/bookmarks/artworks
-#https://www.pixiv.net/users/8790637/bookmarks/artworks?rest=hide
-
-url="https://www.pixiv.net/ajax/user/8790637/illusts/bookmarks"
 config=configparser.ConfigParser()
 config.read("./app.conf")
 mode=config.get("mode","type")
@@ -28,6 +24,8 @@ proxy={
 }
 header=tool.make_header("pixiv",user)
 cookie=tool.make_cookie("pixiv",user)
+pixiv_id=config.get("pixiv","pixiv_id")
+url="https://www.pixiv.net/ajax/user/"+pixiv_id+"/illusts/bookmarks"
 
 
 def syn_start():
