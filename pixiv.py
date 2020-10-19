@@ -74,22 +74,22 @@ def start(type):#type hide or show
             #why add it because shuang
             #if work not exist insert it
             #only when file is exist, get description
-            if not connect.isexist("select * from pixiv_fav where id='"+item["illustId"]+"'"):
-                response=requests.get("https://www.pixiv.net/artworks/"+item["illustId"],cookies=cookie,headers=header,proxies=proxy)
+            if not connect.isexist("select * from pixiv_fav where id='"+item["id"]+"'"):
+                response=requests.get("https://www.pixiv.net/artworks/"+item["id"],cookies=cookie,headers=header,proxies=proxy)
                 pat_des=re.compile(r"\"description\":\"[\s\S]*?\"")
                 result_des=pat_des.findall(response.text)
                 result_desstr=result_des[0][15:len(result_des[0])-1]
 
-                tool.t_print("insert sql, pixiv id "+item["illustId"])
-                connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item["illustId"]+"','"+user+"','"+item["illustTitle"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
+                tool.t_print("insert sql, pixiv id "+item["id"])
+                connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item["id"]+"','"+user+"','"+item["title"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
                 #gif?
                 if item["illustType"]==2:
                     response.close()
-                    response=requests.get("https://www.pixiv.net/ajax/illust/"+item["illustId"]+"/ugoira_meta",headers=header,cookies=cookie,proxies=proxy)
+                    response=requests.get("https://www.pixiv.net/ajax/illust/"+item["id"]+"/ugoira_meta",headers=header,cookies=cookie,proxies=proxy)
                     jo=json.loads(response.text)
                     response.close()
                     frame=json.dumps(jo["body"]["frames"])
-                    connect.execute("insert into pixiv_gif(pixiv_id,url,delay) values('"+item["illustId"]+"','"+jo["body"]["originalSrc"]+"','"+frame+"')")
+                    connect.execute("insert into pixiv_gif(pixiv_id,url,delay) values('"+item["id"]+"','"+jo["body"]["originalSrc"]+"','"+frame+"')")
                     #GIF
                 else:
                     #not GIF
@@ -100,7 +100,7 @@ def start(type):#type hide or show
                     pic_count=item["pageCount"]
                     #insert pic in sql
                     for i in range(pic_count):
-                        connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item["illustId"]+"','"+result[0].replace("p0","p"+str(i))+"')")
+                        connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item["id"]+"','"+result[0].replace("p0","p"+str(i))+"')")
             else:
                 response.close()
                 #tool.t_print("pixiv sql,"+item["illustId"]+" has exist ")
