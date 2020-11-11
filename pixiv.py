@@ -1,4 +1,4 @@
-
+import html
 import requests
 import debug
 import connect
@@ -76,10 +76,11 @@ def start(type):#type hide or show
             #only when file is exist, get description
             if not connect.isexist("select * from pixiv_fav where id='"+item["id"]+"'"):
                 response=requests.get("https://www.pixiv.net/artworks/"+item["id"],cookies=cookie,headers=header,proxies=proxy)
-                pat_des=re.compile(r"\"description\":\"[\s\S]*?\"")
+                pat_des=re.compile(r"\"description\":\"[\s\S]*?\",")
+                tool.t_print(response.text)
                 result_des=pat_des.findall(response.text)
-                result_desstr=result_des[0][15:len(result_des[0])-1]
-
+                result_desstr=result_des[0][15:len(result_des[0])-2]
+                result_desstr=html.unescape(result_desstr)
                 tool.t_print("insert sql, pixiv id "+item["id"])
                 connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item["id"]+"','"+user+"','"+item["title"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
                 #gif?
