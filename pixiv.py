@@ -14,6 +14,10 @@ import zipfile
 import io
 import imageio
 
+#https://www.pixiv.net/users/8790637/bookmarks/artworks
+#https://www.pixiv.net/users/8790637/bookmarks/artworks?rest=hide
+
+url="https://www.pixiv.net/ajax/user/8790637/illusts/bookmarks"
 config=configparser.ConfigParser()
 config.read("./app.conf")
 mode=config.get("mode","type")
@@ -24,8 +28,6 @@ proxy={
 }
 header=tool.make_header("pixiv",user)
 cookie=tool.make_cookie("pixiv",user)
-pixiv_id=config.get("pixiv","pixiv_id")
-url="https://www.pixiv.net/ajax/user/"+pixiv_id+"/illusts/bookmarks"
 
 
 def syn_start():
@@ -74,37 +76,50 @@ def start(type):#type hide or show
             #why add it because shuang
             #if work not exist insert it
             #only when file is exist, get description
-            if not connect.isexist("select * from pixiv_fav where id='"+item["id"]+"'"):
-                response=requests.get("https://www.pixiv.net/artworks/"+item["id"],cookies=cookie,headers=header,proxies=proxy)
+            item_id=""
+            if(isinstance(item["id"],str)):
+                item_id=item["id"]
+            else:
+                item_id=str(item["id"])
+            if not connect.isexist("select * from pixiv_fav where id='"+item_id+"'"):
+                response=requests.get("https://www.pixiv.net/artworks/"+item_id,cookies=cookie,headers=header)
                 pat_des=re.compile(r"\"description\":\"[\s\S]*?\",")
-                tool.t_print(response.text)
                 result_des=pat_des.findall(response.text)
-                result_desstr=result_des[0][15:len(result_des[0])-2]
-                result_desstr=html.unescape(result_desstr)
-                tool.t_print("insert sql, pixiv id "+item["id"])
-                connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item["id"]+"','"+user+"','"+item["title"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
+
+                result_desstr=""
+                if(len(result_des)!=0):
+                    result_desstr=result_des[0][15:len(result_des[0])-2]
+                result_desstr=html.unescape(result_desstr) 
+
+                tool.t_print("insert sql, pixiv id "+item_id)
+                connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item_id+"','"+user+"','"+item["title"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
                 #gif?
                 if item["illustType"]==2:
                     response.close()
-                    response=requests.get("https://www.pixiv.net/ajax/illust/"+item["id"]+"/ugoira_meta",headers=header,cookies=cookie,proxies=proxy)
+                    #https://www.pixiv.net/ajax/illust/81072672/ugoira_meta
+                    response=requests.get("https://www.pixiv.net/ajax/illust/"+item_id+"/ugoira_meta",headers=header,cookies=cookie)
                     jo=json.loads(response.text)
                     response.close()
                     frame=json.dumps(jo["body"]["frames"])
-                    connect.execute("insert into pixiv_gif(pixiv_id,url,delay) values('"+item["id"]+"','"+jo["body"]["originalSrc"]+"','"+frame+"')")
+                    connect.execute("insert into pixiv_gif(pixiv_id,url,delay) values('"+item_id+"','"+jo["body"]["originalSrc"]+"','"+frame+"')")
                     #GIF
                 else:
                     #not GIF
+                    #https://i.pximg.net/img-original/img/2017/01/22/21/15/53/61062485_p0.png
                     #this response is page of works ,on the top we get des from it
                     pat_ori=re.compile(r"https://i\.pximg\.net/img-original/img/[/\d]+_p\d+\.[pngjp]+")
                     result=pat_ori.findall(response.text)
                     response.close()
                     pic_count=item["pageCount"]
+                    if(len(result)==0):
+                        continue;
                     #insert pic in sql
                     for i in range(pic_count):
-                        connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item["id"]+"','"+result[0].replace("p0","p"+str(i))+"')")
+                        #https://i.pximg.net/img-original/img/2020/03/20/01/50/36/80230872_p0.jpg
+                        connect.execute("insert into pixiv_media(pixiv_id,url) values('"+item_id+"','"+result[0].replace("p0","p"+str(i))+"')")
             else:
                 response.close()
-                #tool.t_print("pixiv sql,"+item["illustId"]+" has exist ")
+                #tool.t_print("pixiv sql,"+item_id+" has exist ")
 
 
 def down():
@@ -116,7 +131,7 @@ def down():
             if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
                 #tool.t_print("pixiv file,"+pic_name+" has exist")
                 continue
-            response=requests.get(pic["url"],proxies=proxy,headers=header)
+            response=requests.get(pic["url"],headers=header)
             bf=response.content
             with open("./d_file/pic_file_pixiv/"+pic_name,'wb') as fi:
                 fi.write(bf) 

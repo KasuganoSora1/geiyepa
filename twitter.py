@@ -7,6 +7,7 @@ import time
 import os
 from urllib.parse import urlencode
 import tool
+base_url="https://api.twitter.com/2/timeline/favorites/3224794260.json"
 
 config=configparser.ConfigParser()
 config.read("./app.conf")
@@ -16,8 +17,6 @@ proxy={
     "http":config.get("proxy","http"),
     "https":config.get("proxy","https")
 }
-twitter_id=config.get("twitter","twitter_id")
-base_url="https://api.twitter.com/2/timeline/favorites/"+twitter_id+".json"
 
 def syn_start():
 
