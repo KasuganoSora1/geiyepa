@@ -36,8 +36,8 @@ cookie=tool.make_cookie("pixiv",user)
 def syn_start():
     while True:
         try:
-            start("show","illusts")
-            start("hide","illusts")
+            #start("show","illusts")
+            #start("hide","illusts")
             start("show","novels")
             start("hide","novels")
             time.sleep(60*60)
