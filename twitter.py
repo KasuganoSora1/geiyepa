@@ -96,14 +96,20 @@ def down_start():
                     #tool.t_print("twitter file "+pic_name+" has exists")
                     continue
 
-                response = requests.get(i["url"],proxies=proxy)
+                response = requests.get(i["url"])
                 bf=response.content
-                with open("./d_file/pic_file/"+pic_name,"wb") as f:
-                    f.write(bf)
-                    f.close()
-                response.close()
+                if(response.status_code == 200):
+                    with open("./d_file/pic_file/"+pic_name,"wb") as f:
+                        f.write(bf)
+                        f.close()
+                    response.close()
+                    tool.t_print("twitter file"+pic_name+" has download")
+                elif(response.status_code==403):
+                    tool.t_print("twitter file"+pic_name+" 403")
+                else:
+                    #tool.t_print("twitter file"+pic_name+" not exist")
+                    response.close()
 
-                tool.t_print("twitter file"+pic_name+" has download")
                 
             v_list=connect.read("select * from twitter_video")
             for i in v_list:
@@ -115,14 +121,17 @@ def down_start():
                 if(os.access("./d_file/twitter_video/"+v_name,os.F_OK)):
                     continue
 
-                response = requests.get(i["url"],proxies=proxy)
+                response = requests.get(i["url"])
                 bf=response.content
-                with open("./d_file/twitter_video/"+v_name,"wb") as f:
-                    f.write(bf)
-                    f.close()
-                response.close()
-
-                tool.t_print("twitter file"+v_name+" has download")
+                if(response.status_code!=404):
+                    with open("./d_file/twitter_video/"+v_name,"wb") as f:
+                        f.write(bf)
+                        f.close()
+                        tool.t_print("twitter file"+v_name+" has download")
+                        response.close()
+                else:
+                    #tool.t_print("twitter file"+v_name+" not exist")
+                    response.close()
 
             time.sleep(100)
     except Exception as e:
@@ -137,7 +146,7 @@ def get_next(url):
 
         cookie = tool.make_cookie("twitter",user)
         header = tool.make_header("twitter",user)
-        page = requests.get(url, cookies=cookie, headers=header,proxies=proxy)
+        page = requests.get(url, cookies=cookie, headers=header)
         all_obj = json.loads(page.text)
         page.close()
         twi = all_obj["globalObjects"]["tweets"]
