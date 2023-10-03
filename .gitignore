@@ -129,4 +129,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-spectre_data/
+spectre_twitter_data/

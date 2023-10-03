@@ -14,14 +14,16 @@ import json
 from urllib.parse import urlencode
 
 
-task=threading.Thread(target=twitter.syn_start)
-task1=threading.Thread(target=twitter.down_start)
-task.start()
-task1.start()
-task2=threading.Thread(target=pixiv.syn_start)
-task3=threading.Thread(target=pixiv.down_start)
-task2.start()
-task3.start()
+header=tool.make_header_from_txt("spectre","twitter")
+print(header)
+#task=threading.Thread(target=twitter.syn_start)
+#task1=threading.Thread(target=twitter.down_start)
+#task.start()
+#task1.start()
+#task2=threading.Thread(target=pixiv.syn_start)
+#task3=threading.Thread(target=pixiv.down_start)
+#task2.start()
+#task3.start()
 
 
 
