@@ -41,9 +41,41 @@ def make_header_from_txt(username,webname):
     headers={}
     header_file=open(f'./{username}_{webname}_data/header.txt')
     headers_str=header_file.readlines()
+    header_file.flush()
+    header_file.close()
     for header_str in headers_str:
         header_name_value=header_str.split(":")
         header_name=header_name_value[0]
-        header_value=header_name_value[1]
+        header_value=header_name_value[1].strip("\n")
         headers[header_name]=header_value
     return headers
+def make_variables_from_txt(username,webname):
+    param_file=open(f'./{username}_{webname}_data/variables.json')
+    paras_str=param_file.read()
+    paras_str=paras_str.replace('\n','')
+    paras_str=paras_str.replace('   ','')
+    paras_str=paras_str.replace(' ','')
+    param_file.flush()
+    param_file.close()
+    return paras_str
+def make_features_from_txt(username,webname):
+    feature_file=open(f'./{username}_{webname}_data/features.json')
+    featrue_str=feature_file.read()
+    featrue_str=featrue_str.replace('\n','')
+    featrue_str=featrue_str.replace('   ','')
+    feature_file.flush()
+    feature_file.close()
+    return featrue_str
+def  make_url_from_txt(username,webname):
+    url_file=open(f'./{username}_{webname}_data/url.txt')
+    url_str=url_file.read()
+    url_str=url_str.replace('\n','')
+    url_file.flush()
+    url_file.close()
+    return url_str
+
+def debug_html(html_txt):
+    f=open("debug.html",mode="w",encoding="utf8")
+    f.write(html_txt)
+    f.flush()
+    f.close()

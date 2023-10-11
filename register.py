@@ -1,0 +1,3 @@
+register_user=[
+    "spectre"
+]

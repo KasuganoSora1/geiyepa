@@ -12,10 +12,34 @@ import io
 import imageio
 import json
 from urllib.parse import urlencode
+import requests
+import configparser
+import twitter_new
+
+obj=twitter_new.get_json_from_cursor("spectre",cursor="HBakifP00o3PrjEAAA==")
+bottom_cursor=twitter_new.get_bottom_cursor(obj)
+print(bottom_cursor)
 
 
+"""
+url="https://twitter.com/i/api/graphql/E3aW4junGcnQli6C5ouoPQ/Likes"
+variable=tool.make_variables_from_txt("spectre","twitter")
+featrue=tool.make_features_from_txt("spectre","twitter")
+para={
+    "variables" :variable,
+    "features":featrue
+}
 header=tool.make_header_from_txt("spectre","twitter")
-print(header)
+config=configparser.ConfigParser()
+config.read("./app.conf")
+proxy={
+    "http":config.get("proxy","http"),
+    "https":config.get("proxy","https")
+}
+cookie=tool.make_cookie_from_txt("spectre","twitter")
+web_txt=requests.get(url=url,params=para,headers=header,proxies=proxy,cookies=cookie).text
+tool.debug_html(web_txt)
+"""
 #task=threading.Thread(target=twitter.syn_start)
 #task1=threading.Thread(target=twitter.down_start)
 #task.start()
