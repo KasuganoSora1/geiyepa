@@ -3,6 +3,7 @@ import configparser
 import requests
 import json
 import connect
+import time
 def get_json_from_cursor(username,cursor=None):
 
     txt_url=tool.make_url_from_txt(username=username,webname="twitter")
@@ -63,29 +64,42 @@ def get_bottom_cursor(obj):
 def get_not_exist_count(entyties,username):
     count=0
     for entry in entyties:
+        if(entry["content"].get("itemContent")==None):
+            continue
         entry_id=get_entryid(entry)
         user_in_db=tool.get_dbname("spectre","twitter")
-        is_exist=connect.isexist(f"select * from twitter_fav where id='{entry_id}' and user='{user_in_db}'")
+        is_exist=connect.isexist(f"select * from twitter_fav where id='{entry_id}'")
         if(is_exist==False):
             count=count+1
     return count
+def is_exist(tweet_id,username):
+    tf=connect.execute(f"select * from twitter_fav where id='{tweet_id}'")
+    return tf
 
 def get_entryid(entry):
     tweet_id=entry["entryId"]
     entry_id=tweet_id[6:]
     return entry_id
-
-def sync_entry(entry):
+def sync_entry(entry,username):
     if(entry["content"].get("itemContent")!=None):
-        legacy=entry["content"]["itemContent"]["tweet_results"]["result"]["legacy"]
+        if(entry["content"]["itemContent"]["tweet_results"]["result"].get("legacy")==None):
+            legacy=entry["content"]["itemContent"]["tweet_results"]["result"]["tweet"]["legacy"]
+        else:
+            legacy=entry["content"]["itemContent"]["tweet_results"]["result"]["legacy"]
         full_text=legacy["full_text"]
-        print(full_text)
-        medias=legacy["entities"]["media"]
+        twitter_id=get_entryid(entry)
+        user=tool.get_dbname(username,"twitter")
+        time_str=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
+        #connect.execute(f"insert into twitter_fav(id,user,txt,time) values('{twitter_id}','{user}','{full_text}','{time_str}')")
+        print(f"insert into twitter_fav(id,user,txt,time) values('{twitter_id}','{user}','{full_text}','{time_str}')")
+        if(legacy["entities"].get("media")==None):
+            print(f"{twitter_id} 没有图片")
+            return
+        else:
+            medias=legacy["entities"]["media"]
         for media in medias:
             if(media["type"]=="video"):
-                print(media["type"])
-                #print(media["video_info"])
-                #bitrate
                 bitrate_map={}
                 bitrate_max=0
                 for variant in media["video_info"]["variants"]:
@@ -93,12 +107,20 @@ def sync_entry(entry):
                         bitrate_map[variant["bitrate"]]=variant["url"]
                         if(variant["bitrate"]>bitrate_max):
                             bitrate_max=variant["bitrate"]
-                print(bitrate_map[bitrate_max])
-                print(media["media_url_https"])
-            else:
-                print(media["type"])
-                print(media["media_url_https"])
+                pic_url=media["media_url_https"]
+                video_url=bitrate_map[bitrate_max]
+                #print(bitrate_map[bitrate_max])
+                #print(media["media_url_https"])
+                #connect.execute(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
+                #connect.execute(f"insert into twitter_video(twitter_id,url) values('{twitter_id}','{video_url}')")
+                print(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
+                print(f"insert into twitter_video(twitter_id,url) values('{twitter_id}','{video_url}')")
+                
+            elif():
+                pic_url=media["media_url_https"]
+                #connect.execute(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
+                print(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
     else:
+        print(entry["content"]["cursorType"])
         print("不存在 itemContent")
-    return None
 

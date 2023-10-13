@@ -30,7 +30,7 @@ def read(sql_str):
 
 def execute(sql_str):
     #conn=sqlite3.connect(db_path)
-    conn=pymysql.connect(address,user_name,password,"data")
+    conn=pymysql.connect(host=address,user=user_name,passwd=password,db="data")
     pointer=conn.cursor()
     pointer.execute(sql_str)
     pointer.close()
