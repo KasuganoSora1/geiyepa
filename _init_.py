@@ -15,11 +15,10 @@ from urllib.parse import urlencode
 import requests
 import configparser
 import twitter_new
-
-obj=twitter_new.get_json_from_cursor("spectre",cursor="HBakifP00o3PrjEAAA==")
-bottom_cursor=twitter_new.get_bottom_cursor(obj)
-print(bottom_cursor)
-
+#cursor="HBakifP00o3PrjEAAA=="
+obj=twitter_new.get_json_from_cursor("spectre")
+entyties=twitter_new.get_entyties(obj)
+count=twitter_new.get_not_exist_count(entyties,"spectre")
 
 """
 url="https://twitter.com/i/api/graphql/E3aW4junGcnQli6C5ouoPQ/Likes"

@@ -2,6 +2,7 @@ import tool
 import configparser
 import requests
 import json
+import connect
 def get_json_from_cursor(username,cursor=None):
 
     txt_url=tool.make_url_from_txt(username=username,webname="twitter")
@@ -42,6 +43,7 @@ def get_json_from_cursor(username,cursor=None):
 #"cursor":"HBakifP00o3PrjEAAA==",
 def get_entyties(obj):
     return obj["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"][0]["entries"]
+
 def get_bottom_cursor(obj):
     entyties=get_entyties(obj)
     for entry in entyties:
@@ -58,6 +60,45 @@ def get_bottom_cursor(obj):
             print("不存在itemcontent 和 entryType")
     return None
 
-def down_entry(entry):
+def get_not_exist_count(entyties,username):
+    count=0
+    for entry in entyties:
+        entry_id=get_entryid(entry)
+        user_in_db=tool.get_dbname("spectre","twitter")
+        is_exist=connect.isexist(f"select * from twitter_fav where id='{entry_id}' and user='{user_in_db}'")
+        if(is_exist==False):
+            count=count+1
+    return count
+
+def get_entryid(entry):
+    tweet_id=entry["entryId"]
+    entry_id=tweet_id[6:]
+    return entry_id
+
+def sync_entry(entry):
+    if(entry["content"].get("itemContent")!=None):
+        legacy=entry["content"]["itemContent"]["tweet_results"]["result"]["legacy"]
+        full_text=legacy["full_text"]
+        print(full_text)
+        medias=legacy["entities"]["media"]
+        for media in medias:
+            if(media["type"]=="video"):
+                print(media["type"])
+                #print(media["video_info"])
+                #bitrate
+                bitrate_map={}
+                bitrate_max=0
+                for variant in media["video_info"]["variants"]:
+                    if(variant.get("bitrate")!=None):
+                        bitrate_map[variant["bitrate"]]=variant["url"]
+                        if(variant["bitrate"]>bitrate_max):
+                            bitrate_max=variant["bitrate"]
+                print(bitrate_map[bitrate_max])
+                print(media["media_url_https"])
+            else:
+                print(media["type"])
+                print(media["media_url_https"])
+    else:
+        print("不存在 itemContent")
     return None
 

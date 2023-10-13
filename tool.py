@@ -79,3 +79,11 @@ def debug_html(html_txt):
     f.write(html_txt)
     f.flush()
     f.close()
+
+def get_dbname(username,webname):
+    f=open(f'./{username}_{webname}_data/system_name.txt')
+    name=f.readline()
+    name=name.strip("\n")
+    f.flush()
+    f.close()
+    return name
