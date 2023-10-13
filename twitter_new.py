@@ -4,6 +4,7 @@ import requests
 import json
 import connect
 import time
+import os
 def get_json_from_cursor(username,cursor=None):
 
     txt_url=tool.make_url_from_txt(username=username,webname="twitter")
@@ -73,7 +74,7 @@ def get_not_exist_count(entyties,username):
             count=count+1
     return count
 def is_exist(tweet_id,username):
-    tf=connect.execute(f"select * from twitter_fav where id='{tweet_id}'")
+    tf=connect.isexist(f"select * from twitter_fav where id='{tweet_id}'")
     return tf
 
 def get_entryid(entry):
@@ -91,8 +92,8 @@ def sync_entry(entry,username):
         user=tool.get_dbname(username,"twitter")
         time_str=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-        #connect.execute(f"insert into twitter_fav(id,user,txt,time) values('{twitter_id}','{user}','{full_text}','{time_str}')")
-        print(f"insert into twitter_fav(id,user,txt,time) values('{twitter_id}','{user}','{full_text}','{time_str}')")
+        connect.execute(f"insert into twitter_fav(id,user,txt,time) values('{twitter_id}','{user}','{full_text}','{time_str}')")
+        #print(f"insert into twitter_fav(id,user,txt,time) values('{twitter_id}','{user}','{full_text}','{time_str}')")
         if(legacy["entities"].get("media")==None):
             print(f"{twitter_id} 没有图片")
             return
@@ -109,18 +110,90 @@ def sync_entry(entry,username):
                             bitrate_max=variant["bitrate"]
                 pic_url=media["media_url_https"]
                 video_url=bitrate_map[bitrate_max]
-                #print(bitrate_map[bitrate_max])
-                #print(media["media_url_https"])
-                #connect.execute(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
-                #connect.execute(f"insert into twitter_video(twitter_id,url) values('{twitter_id}','{video_url}')")
-                print(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
-                print(f"insert into twitter_video(twitter_id,url) values('{twitter_id}','{video_url}')")
+                connect.execute(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
+                connect.execute(f"insert into twitter_video(twitter_id,url) values('{twitter_id}','{video_url}')")
+                #print(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
+                #print(f"insert into twitter_video(twitter_id,url) values('{twitter_id}','{video_url}')")
                 
-            elif():
+            else:
                 pic_url=media["media_url_https"]
-                #connect.execute(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
-                print(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
+                connect.execute(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
+                #print(f"insert into twitter_media(twitter_id,url) values('{twitter_id}','{pic_url}')")
     else:
-        print(entry["content"]["cursorType"])
-        print("不存在 itemContent")
+        #print(entry["content"]["cursorType"])
+        #print("不存在 itemContent")
+        pass
 
+def down_start():
+    try:
+        c_list = connect.read("select * from twitter_media")
+        for i in c_list:
+            pic_name=i["url"].split('/')[len(i["url"].split('/'))-1]
+
+            if(os.access("./d_file/pic_file/"+pic_name,os.F_OK)):
+                #tool.t_print("twitter file "+pic_name+" has exists")
+                continue
+
+            response = requests.get(i["url"])
+            bf=response.content
+            if(response.status_code == 200):
+                with open("./d_file/pic_file/"+pic_name,"wb") as f:
+                    f.write(bf)
+                    f.close()
+                response.close()
+                tool.t_print("twitter file"+pic_name+" has download")
+            elif(response.status_code==403):
+                tool.t_print("twitter file"+pic_name+" 403")
+            else:
+                #tool.t_print("twitter file"+pic_name+" not exist")
+                response.close()
+
+            
+        v_list=connect.read("select * from twitter_video")
+        for i in v_list:
+            v_name=i["url"].split('/')[len(i["url"].split('/'))-1]
+            if(v_name.find("?")!=-1):
+                v_name=v_name[0:v_name.find("?")]
+            if(v_name.find(".m3u8")!=-1):
+                continue
+            if(os.access("./d_file/twitter_video/"+v_name,os.F_OK)):
+                continue
+
+            response = requests.get(i["url"])
+            bf=response.content
+            if(response.status_code!=404):
+                with open("./d_file/twitter_video/"+v_name,"wb") as f:
+                    f.write(bf)
+                    f.close()
+                    tool.t_print("twitter file"+v_name+" has download")
+                    response.close()
+            else:
+                #tool.t_print("twitter file"+v_name+" not exist")
+                response.close()
+
+        time.sleep(100)
+    except Exception as e:
+        tool.t_print("twitter错误%s"%e)
+
+def start_sync(username):
+    cursor=""
+    while(True):
+        if(cursor==""):
+            obj=get_json_from_cursor(username)
+        else:
+            obj=get_json_from_cursor(username,cursor)
+        entyties=get_entyties(obj)
+        count=get_not_exist_count(entyties,"spectre")
+        #count=len(entyties)
+        if(count==0):
+            break
+        else:
+            print("需要sync:"+str(count)+"个")
+            cursor=get_bottom_cursor(obj)
+            for entry in entyties:
+                tweet_id=get_entryid(entry)
+                if(is_exist(tweet_id,"spectre")):
+                    pass
+                else:
+                    sync_entry(entry,"spectre")
+    print(f"{username}结束sync")
