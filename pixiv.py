@@ -34,22 +34,20 @@ cookie=tool.make_cookie("pixiv",user)
 
 
 def syn_start():
-    while True:
-        try:
-            start("show","illusts")
-            start("hide","illusts")
-            start("hide","novels")
-            start("show","novels")
-            time.sleep(60*60)
-        except Exception as e:
-            tool.t_print("pixiv 错误%s"%e)
+    #try:
+        #start("show","illusts")
+        start("hide","illusts")
+        start("hide","novels")
+        #start("show","novels")
+    #except Exception as e:
+    #    tool.t_print("pixiv 错误%s"%e)
 def down_start():
-    while True:
-        try:
-            down()
-            time.sleep(100)
-        except Exception as e:
-            tool.t_print("pixiv 错误%s"%e)
+    count:int=0
+    try:
+        count=down()
+    except Exception as e:
+        tool.t_print("pixiv 错误%s"%e)
+    return count
 
 
 
@@ -98,46 +96,55 @@ def start(type,ion):#type hide or show,ion illusts or novels
 
 
 def down():
-    while True:
-        pic_list=connect.read("select * from pixiv_media")
-        gif_list=connect.read("select * from pixiv_gif")
-        cover_list=connect.read("select * from pixiv_novel")
-        for pic in pic_list:
-            pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
-            if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
-                #tool.t_print("pixiv file,"+pic_name+" has exist")
-                continue
-            response=requests.get(pic["url"],headers=header)
-            bf=response.content
-            if(response.status_code!=404):
-                with open("./d_file/pic_file_pixiv/"+pic_name,'wb') as fi:
-                    fi.write(bf) 
-                    fi.close()
-                    tool.t_print("pixiv file"+pic_name+" has download")
-            response.close()
+    pic_list=connect.read("select * from pixiv_media")
+    gif_list=connect.read("select * from pixiv_gif")
+    cover_list=connect.read("select * from pixiv_novel")
+    count=0
+    for pic in pic_list:
+        pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
+        if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
+            #tool.t_print("pixiv file,"+pic_name+" has exist")
+            continue
+        response=requests.get(pic["url"],headers=header)
+        bf=response.content
+        if(response.status_code!=404):
+            with open("./d_file/pic_file_pixiv/"+pic_name,'wb') as fi:
+                fi.write(bf) 
+                fi.close()
+                tool.t_print("pixiv file"+pic_name+" has download")
+        else:
+            count=count+1
+        response.close()
 
-        for gif in gif_list:
-            if(os.access("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK)):
-                #tool.t_print("pixiv file,"+gif["pixiv_id"]+" has exist")
-                continue
-            gif_down(gif)
-            tool.t_print("pixiv gif "+gif["pixiv_id"]+".gif"+" has download")
+    for gif in gif_list:
+        if(os.access("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK)):
+            #tool.t_print("pixiv file,"+gif["pixiv_id"]+" has exist")
+            continue
+        tf=gif_down(gif)
+        if(not tf):
+            count=count+1
+        tool.t_print("pixiv gif "+gif["pixiv_id"]+".gif"+" has download")
 
-        for cover in cover_list:
-            cover_name=cover["novel_cover"].split('/')[len(cover["novel_cover"].split('/'))-1]
-            if(os.access("./d_file/novel_cover_pixiv/"+cover_name,os.F_OK)):
-                continue
-            response=requests.get(cover["novel_cover"],headers=header)
-            bf=response.content
-            if(response.status_code!=404):
-                with open("./d_file/novel_cover_pixiv/"+cover_name,'wb') as fi:
-                    fi.write(bf) 
-                    fi.close()
-                    tool.t_print("novel cover"+cover_name+" has download")
-            response.close()
+    for cover in cover_list:
+        cover_name=cover["novel_cover"].split('/')[len(cover["novel_cover"].split('/'))-1]
+        if(os.access("./d_file/novel_cover_pixiv/"+cover_name,os.F_OK)):
+            continue
+        response=requests.get(cover["novel_cover"],headers=header)
+        bf=response.content
+        if(response.status_code!=404):
+            with open("./d_file/novel_cover_pixiv/"+cover_name,'wb') as fi:
+                fi.write(bf) 
+                fi.close()
+                tool.t_print("novel cover"+cover_name+" has download")
+        else:
+            count=count+1
+        response.close()
+    return count
     
 def gif_down(gif):
     response=requests.get(gif["url"],headers=header)
+    if(response.status_code==404):
+        return False
     bf=response.content
     by=io.BytesIO(bf)
     zip_file=zipfile.ZipFile(by,"r")
@@ -152,6 +159,7 @@ def gif_down(gif):
         image_delay.append(delay["delay"]/1000)
     imageio.mimsave("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",image_pic,"GIF",duration=image_delay)
     tool.t_print("pixiv file"+gif["pixiv_id"]+" has download")
+    return True
 
 def getillustitem(item_id,item):
     if not connect.isexist("select * from pixiv_fav where id='"+item_id+"'"):

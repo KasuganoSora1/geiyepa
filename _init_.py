@@ -15,6 +15,9 @@ from urllib.parse import urlencode
 import requests
 import configparser
 import twitter_new
+twitter_new.start_sync("someonessomthi1")
 twitter_new.start_sync("spectre")
-twitter.down_start()
-#twitter_new.down_start()
+twitter_new.down_start()
+pixiv.syn_start()
+count=pixiv.down_start()
+print(f"存在{count}个图片已经无法下载")

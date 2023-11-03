@@ -126,12 +126,12 @@ def sync_entry(entry,username):
 
 def down_start():
     try:
-        c_list = connect.read("select * from twitter_media")
+        c_list = connect.read("select * from twitter_media order by id desc")
         for i in c_list:
             pic_name=i["url"].split('/')[len(i["url"].split('/'))-1]
 
             if(os.access("./d_file/pic_file/"+pic_name,os.F_OK)):
-                #tool.t_print("twitter file "+pic_name+" has exists")
+                #tool.t_print(str(i["id"])+": twitter file "+pic_name+" has exists")
                 continue
 
             response = requests.get(i["url"])
@@ -171,7 +171,7 @@ def down_start():
                 #tool.t_print("twitter file"+v_name+" not exist")
                 response.close()
 
-        time.sleep(100)
+            print("twitter down end")
     except Exception as e:
         tool.t_print("twitter错误%s"%e)
 
@@ -184,11 +184,12 @@ def start_sync(username):
             obj=get_json_from_cursor(username,cursor)
         entyties=get_entyties(obj)
         count=get_not_exist_count(entyties,"spectre")
-        #count=len(entyties)
+        #xx_count=len(entyties)
         if(count==0):
             break
         else:
             print("需要sync:"+str(count)+"个")
+            #print("总数"+str(xx_count))
             cursor=get_bottom_cursor(obj)
             for entry in entyties:
                 tweet_id=get_entryid(entry)
