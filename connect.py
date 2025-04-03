@@ -9,7 +9,7 @@ user_name=config.get("mysql","username")
 password=config.get("mysql","password")
 def read(sql_str):
     #conn=sqlite3.connect(db_path)
-    conn=pymysql.connect(address,user_name,password,"data")
+    conn=pymysql.connect(host=address,user=user_name,passwd=password,db="data")
     pointer=conn.cursor()
     pointer.execute(sql_str)
     names=[]
@@ -24,13 +24,12 @@ def read(sql_str):
             one_value[names[col_index]]=row[col_index]
         results.append(one_value)
     pointer.close()
-    conn.commit()
     conn.close()
     return results
 
 def execute(sql_str):
     #conn=sqlite3.connect(db_path)
-    conn=pymysql.connect(address,user_name,password,"data")
+    conn=pymysql.connect(host=address,user=user_name,passwd=password,db="data")
     pointer=conn.cursor()
     pointer.execute(sql_str)
     pointer.close()
@@ -39,7 +38,7 @@ def execute(sql_str):
     return
 def isexist(sql_str):
     #conn=sqlite3.connect(db_path)
-    conn=pymysql.connect(address,user_name,password,"data")
+    conn=pymysql.connect(host=address,user=user_name,passwd=password,database="data")
     pointer=conn.cursor()
     pointer.execute(sql_str)
     re=True
@@ -48,6 +47,5 @@ def isexist(sql_str):
     else:
         re=True
     pointer.close()
-    conn.commit()
     conn.close()
     return re

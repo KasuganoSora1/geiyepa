@@ -129,3 +129,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+spectre_twitter_data/
+someonessomthi1_twitter_data/

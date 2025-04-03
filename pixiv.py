@@ -29,27 +29,31 @@ proxy={
         "http":config.get("proxy","http"),
         "https":config.get("proxy","https")
 }
-header=tool.make_header("pixiv",user)
-cookie=tool.make_cookie("pixiv",user)
+#header=tool.make_header("pixiv",user)
+#cookie=tool.make_cookie("pixiv",user)
+header=tool.make_header_from_txt("spectre","pixiv")
+cookie=tool.make_cookie_from_txt("spectre","pixiv")
+
 
 
 def syn_start():
-    while True:
-        try:
-            start("show","illusts")
-            start("hide","illusts")
-            start("hide","novels")
-            start("show","novels")
-            time.sleep(60*60)
-        except Exception as e:
-            tool.t_print("pixiv 错误%s"%e)
+    #try:
+        start("show","illusts")
+        start("hide","illusts")
+        start("hide","novels")
+        start("show","novels")
+    #except Exception as e:
+    #    tool.t_print("pixiv 错误%s"%e)
 def down_start():
-    while True:
-        try:
-            down()
-            time.sleep(100)
-        except Exception as e:
-            tool.t_print("pixiv 错误%s"%e)
+    count:int=0
+    count=down()
+    """
+    try:
+        count=down()
+    except Exception as e:
+        tool.t_print("pixiv 错误%s"%e)
+    """
+    return count
 
 
 
@@ -63,17 +67,18 @@ def start(type,ion):#type hide or show,ion illusts or novels
             "lang":"zh"
             }
     url="https://www.pixiv.net/ajax/user/"+pixiv_id+"/"+ion+"/bookmarks"
-    response=requests.get(url+"?"+urlencode(para),cookies=cookie,headers=header)
+    response=requests.get(url+"?"+urlencode(para),cookies=cookie,headers=header,proxies=proxy)
     jo=json.loads(response.text)
     response.close()
 
 
     total_num=int(jo["body"]["total"])
     page_num=math.ceil(total_num/48)
-    for page in range(0,page_num):
+    #for page in range(0,page_num):
+    for page in range(0,10):
         #循环获取所有
         para["offset"]=page*48
-        response=requests.get(url+"?"+urlencode(para),cookies=cookie,headers=header)
+        response=requests.get(url+"?"+urlencode(para),cookies=cookie,headers=header,proxies=proxy)
         tool.t_print("pixiv open page "+str(page))
         jo=json.loads(response.text)
         response.close()
@@ -98,46 +103,69 @@ def start(type,ion):#type hide or show,ion illusts or novels
 
 
 def down():
-    while True:
-        pic_list=connect.read("select * from pixiv_media")
-        gif_list=connect.read("select * from pixiv_gif")
-        cover_list=connect.read("select * from pixiv_novel")
-        for pic in pic_list:
-            pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
-            if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
-                #tool.t_print("pixiv file,"+pic_name+" has exist")
-                continue
-            response=requests.get(pic["url"],headers=header)
-            bf=response.content
-            if(response.status_code!=404):
-                with open("./d_file/pic_file_pixiv/"+pic_name,'wb') as fi:
-                    fi.write(bf) 
-                    fi.close()
-                    tool.t_print("pixiv file"+pic_name+" has download")
-            response.close()
+    pic_list=connect.read("select * from pixiv_media")
+    gif_list=connect.read("select * from pixiv_gif")
+    cover_list=connect.read("select * from pixiv_novel")
+    count=0
+    for pic in pic_list:
 
-        for gif in gif_list:
-            if(os.access("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK)):
-                #tool.t_print("pixiv file,"+gif["pixiv_id"]+" has exist")
-                continue
-            gif_down(gif)
-            tool.t_print("pixiv gif "+gif["pixiv_id"]+".gif"+" has download")
+        pic_name=pic["url"].split('/')[len(pic["url"].split('/'))-1]
+        if(os.access("./d_file/pic_file_pixiv/"+pic_name,os.F_OK)):
+            continue
 
-        for cover in cover_list:
-            cover_name=cover["novel_cover"].split('/')[len(cover["novel_cover"].split('/'))-1]
-            if(os.access("./d_file/novel_cover_pixiv/"+cover_name,os.F_OK)):
-                continue
-            response=requests.get(cover["novel_cover"],headers=header)
-            bf=response.content
-            if(response.status_code!=404):
-                with open("./d_file/novel_cover_pixiv/"+cover_name,'wb') as fi:
-                    fi.write(bf) 
-                    fi.close()
-                    tool.t_print("novel cover"+cover_name+" has download")
-            response.close()
+        if(connect.isexist(f"select * from pixiv_media_404 where pixiv_id='{pic["pixiv_id"]}'")):
+            tool.t_print(f"{pic["pixiv_id"]} has 404,break it")
+            count=count+1
+            continue
+
+        response=requests.get(pic["url"],headers=header,proxies=proxy)
+        bf=response.content
+        if(response.status_code==200):
+            with open("./d_file/pic_file_pixiv/"+pic_name,'wb') as fi:
+                fi.write(bf) 
+                fi.close()
+                tool.t_print("pixiv file"+pic_name+" has download")
+        elif(response.status_code==403):
+            tool.t_print("pixiv file"+pic_name+" 403")
+            count=count+1
+        elif(response.status_code==404):
+            tool.t_print("pixiv file"+pic_name+" 404")
+            connect.execute(f"insert into pixiv_media_404(pixiv_id,url) values('{pic["pixiv_id"]}','{pic["url"]}')")
+            count=count+1
+        else:
+            count=count+1
+        response.close()
+
+    for gif in gif_list:
+        if(os.access("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",os.F_OK)):
+            #tool.t_print("pixiv file,"+gif["pixiv_id"]+" has exist")
+            continue
+        tf=gif_down(gif)
+        if(not tf):
+            count=count+1
+        tool.t_print("pixiv gif "+gif["pixiv_id"]+".gif"+" has download")
+
+    for cover in cover_list:
+        cover_name=cover["novel_cover"].split('/')[len(cover["novel_cover"].split('/'))-1]
+        if(os.access("./d_file/novel_cover_pixiv/"+cover_name,os.F_OK)):
+            continue
+        response=requests.get(cover["novel_cover"],headers=header,proxies=proxy)
+        bf=response.content
+        if(response.status_code!=404):
+            with open("./d_file/novel_cover_pixiv/"+cover_name,'wb') as fi:
+                fi.write(bf) 
+                fi.close()
+                tool.t_print("novel cover"+cover_name+" has download")
+        else:
+            count=count+1
+        response.close()
+    return count
     
 def gif_down(gif):
-    response=requests.get(gif["url"],headers=header)
+
+    response=requests.get(gif["url"],headers=header,proxies=proxy)
+    if(response.status_code==404):
+        return False
     bf=response.content
     by=io.BytesIO(bf)
     zip_file=zipfile.ZipFile(by,"r")
@@ -150,12 +178,15 @@ def gif_down(gif):
     delays=json.loads(gif["delay"])
     for delay in delays:
         image_delay.append(delay["delay"]/1000)
-    imageio.mimsave("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",image_pic,"GIF",duration=image_delay)
+    imageio.mimwrite("./d_file/pic_file_pixiv/"+gif["pixiv_id"]+".gif",image_pic,"GIF",duration=image_delay,loop=0)
     tool.t_print("pixiv file"+gif["pixiv_id"]+" has download")
+    return True
 
 def getillustitem(item_id,item):
+
     if not connect.isexist("select * from pixiv_fav where id='"+item_id+"'"):
-        response=requests.get("https://www.pixiv.net/artworks/"+item_id,cookies=cookie,headers=header)
+        response=requests.get("https://www.pixiv.net/artworks/"+item_id,headers=header,cookies=cookie,proxies=proxy)
+        #tool.debug_html(response.text)
         result_desstr=getanitemfromjosntxt(response.text,"\"illustComment\"",1)
         #pat_des=re.compile(r"\"description\":\"[\s\S]*?\",")
         #result_des=pat_des.findall(response.text)
@@ -165,12 +196,12 @@ def getillustitem(item_id,item):
         result_desstr=unquote(result_desstr,"utf-8")
         result_desstr=html.unescape(result_desstr)
         tool.t_print("insert sql, pixiv id "+item_id)
-        connect.execute("insert into pixiv_fav(id,user,txt,time,des) values('"+item_id+"','"+user+"','"+item["title"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"')")
+        connect.execute("insert into pixiv_fav(id,user,txt,time,des,user_id,user_name) values('"+item_id+"','"+user+"','"+item["title"].replace("'","").replace("\\","")+"','"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+result_desstr.replace("'","").replace("\\","")+"','"+item["userId"]+"','"+item["userName"]+"')")
         #gif?
         if item["illustType"]==2:
             response.close()
             #https://www.pixiv.net/ajax/illust/81072672/ugoira_meta
-            response=requests.get("https://www.pixiv.net/ajax/illust/"+item_id+"/ugoira_meta",headers=header,cookies=cookie)
+            response=requests.get("https://www.pixiv.net/ajax/illust/"+item_id+"/ugoira_meta",headers=header,cookies=cookie,proxies=proxy)
             jo=json.loads(response.text)
             response.close()
             frame=json.dumps(jo["body"]["frames"])
@@ -201,13 +232,14 @@ def getnovelitem(item_id,item):
         #time now
         #novel_cover url
         # https://www.pixiv.net/novel/show.php?id=
-        response=requests.get("https://www.pixiv.net/novel/show.php?id="+item_id,headers=header,cookies=cookie)
+        response=requests.get("https://www.pixiv.net/novel/show.php?id="+item_id,headers=header,cookies=cookie,proxies=proxy)
         html_txt=response.text
         txt=getanitemfromjosntxt(html_txt,"\"content\"",0)
         txt=txt.replace("\\n","</br>")
         txt=txt.replace("\\t","</br>")
+        txt=txt.replace("❤","&hearts;")
         response.close()
-        connect.execute("insert into pixiv_novel(novel_id,novel_title,novel_count,time,novel_cover) values('"+item_id+"','"+item["title"]+"',"+str(item["textCount"])+",'"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+item["url"]+"')")
+        connect.execute("insert into pixiv_novel(novel_id,novel_title,novel_count,time,novel_cover,user_id,user_name) values('"+item_id+"','"+item["title"]+"',"+str(item["textCount"])+",'"+time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"','"+item["url"]+"','"+item["userId"]+"','"+item["userName"]+"')")
         i=0
         while(i*1000 <= len(txt)):
             if((i+1)*1000<=len(txt)):

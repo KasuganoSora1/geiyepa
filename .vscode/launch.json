@@ -5,11 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: debug",
+            "name": "Python: 当前文件",
             "type": "python",
             "request": "launch",
-            "program": "_init_.py",
-            "console": "integratedTerminal"
+            "program": "${workspaceFolder}/_init_.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
